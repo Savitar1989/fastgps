@@ -382,6 +382,14 @@ function renderList(container, origin, optimizedResult){
     allCard.appendChild(left);
     allCard.appendChild(right);
     container.appendChild(allCard);
+aAll.onclick = function(e) {
+  const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMobile) {
+    e.preventDefault();
+    window.location.href = this.href;
+    return false;
+  }
+};
   }
   
   // Egyedi címek optimalizált sorrendben
@@ -512,10 +520,16 @@ async function main(){
           href = googleLink(origin, optimizedResult.route);
         } else if(app === "apple") {
           href = appleMultiLink(origin, optimizedResult.route);
+          const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          if(isMobile && href) {
+            window.location.href = href;
+        } else if(href) {
+          window.open(href, "_blank");
+        }
         } else if(app === "waze") {
           href = wazeLink(origin, optimizedResult.route[0]);
         }
-        
+          
         if(href) {
           window.open(href, "_blank");
         }
@@ -546,4 +560,5 @@ window.addEventListener('load', main);
 </script>
 </body>
 </html>
+
 
