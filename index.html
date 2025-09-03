@@ -1,502 +1,180 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gyors Címrendező & Navigáció</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
+<title>Brute Force TSP Apple/Google Maps</title>
 <style>
-  :root { --radius: 12px; }
-  html, body { height: 100%; }
-  body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    margin: 0; padding: 16px; background:#f6f7fb; color:#111;
-  }
-  .app {
-    max-width: 900px; margin: 0 auto; background:#fff; padding: 16px;
-    border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,.08);
-  }
-  h1 { font-size: 1.25rem; margin: 0 0 8px; }
-  p.hint { margin-top: 0; color:#444; font-size: .95rem; }
-  textarea {
-    width: 100%; min-height: 160px; resize: vertical; padding: 12px;
-    border-radius: var(--radius); border:1px solid #d8dbe4; font-size: 1rem;
-    box-sizing: border-box;
-  }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-  .row > * { flex: 1; }
-  .row .tight { flex: 0 0 auto; }
-  .btn {
-    appearance:none; border:0; border-radius: 10px; padding: 12px 16px;
-    background:#111; color:#fff; font-weight: 600; cursor: pointer;
-    text-decoration: none; display: inline-block; text-align: center;
-  }
-  .btn:disabled { background:#ccc; cursor: not-allowed; }
-  .btn.secondary { background:#e9ecf4; color:#111; }
-  .btn.ghost { background:transparent; color:#111; border:1px solid #d8dbe4; }
-  .small { font-size: .9rem; color:#555; }
-  .list { margin-top: 16px; }
-  .card {
-    border:1px solid #e6e8ef; border-radius: 12px; padding: 12px; margin: 8px 0;
-    display:flex; gap: 12px; align-items: center; justify-content: space-between;
-  }
-  .addr { font-weight: 600; }
-  .muted { color:#666; font-size: .9rem; }
-  .right { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-  details { margin-top: 10px; }
-  kbd { background:#f3f5fb; border:1px solid #e4e7f0; border-bottom-width:2px; padding:2px 6px; border-radius:6px; }
-  .foot { margin-top: 16px; color:#666; font-size:.9rem; }
-  .pill { background:#f2f5ff; border:1px solid #dbe3ff; color:#1b3ea3; padding:4px 8px; border-radius:999px; font-size:.8rem; }
-  select { width:100%; padding:10px; border-radius:10px; border:1px solid #d8dbe4; box-sizing: border-box; }
-  .error { color: #d32f2f; background: #ffebee; padding: 12px; border-radius: var(--radius); margin: 8px 0; }
-  .success { color: #2e7d32; background: #e8f5e8; padding: 12px; border-radius: var(--radius); margin: 8px 0; }
-  .loading { color: #1976d2; background: #e3f2fd; padding: 12px; border-radius: var(--radius); margin: 8px 0; }
-  @media (max-width: 600px) {
-    .row { flex-direction: column; align-items: stretch; }
-    .right { justify-content: center; }
-  }
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  label { display: block; margin-top: 10px; }
+  textarea { width: 100%; height: 100px; }
+  select, button { margin-top: 10px; padding: 5px; }
+  #result { margin-top: 20px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
-  <div class="app">
-    <h1>Gyors Címrendező & Navigáció</h1>
-    <p class="hint">Írj be <b>egy címet soronként</b>. Megkérem a telefonod helyzetét, geokódolom a címeket, sorba rakom a <b>hozzád mért</b> távolság szerint, és egy koppintással megnyitom a navigációt.</p>
 
-    <label for="addresses" class="pill">Címek (egy sor = egy cím)</label>
-    <textarea id="addresses" placeholder="Pl.&#10;Kossuth Lajos utca 5, Szeged&#10;Dugonics tér 1, Szeged&#10;Rákóczi út 12, Szeged"></textarea>
+<h2>Útvonaltervezés Brute Force TSP-vel</h2>
 
-    <div class="row" style="margin-top:12px">
-      <div>
-        <label for="app">Navigációs app</label><br/>
-        <select id="app">
-          <option value="apple">Apple Maps (iPhone ajánlott)</option>
-          <option value="google">Google Maps</option>
-          <option value="waze">Waze</option>
-        </select>
-      </div>
-    </div>
+<label for="origin">Kiindulási pont címe:</label>
+<input type="text" id="origin" placeholder="Pl. Budapest, Erzsébet tér 1" style="width:100%;" />
 
-    <details>
-      <summary>Haladó beállítások</summary>
-      <div style="margin-top:8px" class="small">
-        Geokódolás: <b>Nominatim (OpenStreetMap)</b>. Kis listákhoz megbízható. Ne küldj <b>másodpercenként 1</b> kérésnél többet. Tömegesen használandó esetben ajánlott saját kulcsos szolgáltató (pl. Google Geocoding API).<br/>
-        Ha egy címet nem lehet egyértelműen beazonosítani, a sor <i>kihagyásra</i> kerül.
-      </div>
-    </details>
+<label for="addresses">Úticélok címei (soronként):</label>
+<textarea id="addresses" placeholder="Pl. Váci utca 1&#10;Andrássy út 50"></textarea>
 
-    <div id="status" class="foot"></div>
-    <div id="results" class="list"></div>
-  </div>
+<label for="mapService">Térképszolgáltató:</label>
+<select id="mapService">
+  <option value="google">Google Maps</option>
+  <option value="apple">Apple Maps</option>
+</select>
+
+<button id="go">Geokódolás és útvonaltervezés</button>
+
+<div id="result"></div>
 
 <script>
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Haversine távolság km-ben
+function haversine(p1, p2) {
+  const toRad = v => (v * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(p2.lat - p1.lat);
+  const dLon = toRad(p2.lon - p1.lon);
+  const lat1 = toRad(p1.lat);
+  const lat2 = toRad(p2.lat);
 
-// Haversine formula a távolság számításához
-function haversine(a, b){
-  const R = 6371e3; // Föld sugara méterben
-  const toRad = d => d * Math.PI/180;
-  const dPhi = toRad(b.lat - a.lat);
-  const dLambda = toRad(b.lon - a.lon);
-  const phi1 = toRad(a.lat);
-  const phi2 = toRad(b.lat);
-  const s = Math.sin(dPhi/2)**2 + Math.cos(phi1)*Math.cos(phi2)*Math.sin(dLambda/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s)); // méterben
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
-// Egy cím geokódolása
-async function geocodeOne(query){
-  const url = new URL("https://nominatim.openstreetmap.org/search");
-  url.searchParams.set("q", query);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "1");
-  url.searchParams.set("addressdetails", "1");
-  
-  const resp = await fetch(url, {
-    headers: { 
-      "Accept": "application/json",
-      "User-Agent": "courier-route-app/1.0 (personal-use)" 
-    }
-  });
-  
-  if(!resp.ok) throw new Error("Hálózati hiba a geokódoláskor");
-  const data = await resp.json();
-  if(!data || !data[0]) return null;
-  
-  return {
-    display: data[0].display_name,
-    lat: parseFloat(data[0].lat),
-    lon: parseFloat(data[0].lon)
-  };
-}
-
-// Összes cím geokódolása
-async function geocodeAll(lines, setStatus){
-  const out = [];
-  for(let i=0; i<lines.length; i++){
-    const q = lines[i].trim();
-    if(!q) continue;
-    
-    setStatus(`Geokódolás (${i+1}/${lines.length})…`, 'loading');
-    
-    try{
-      const g = await geocodeOne(q);
-      if(g) {
-        out.push({ input: q, ...g });
-      } else {
-        console.warn(`Nem található cím: ${q}`);
-      }
-    } catch(e) {
-      console.warn("Geokódolás hiba:", e);
-    }
-    
-    // Udvarias throttling - 1 másodperc várakozás
-    if(i < lines.length - 1) {
-      await sleep(1000);
-    }
-  }
-  return out;
-}
-
-// Rendezés távolság szerint
-function orderByNearestFromOrigin(origin, points){
-  return points
-    .map(p => ({...p, dist: haversine(origin, p)}))
-    .sort((a,b) => a.dist - b.dist);
-}
-
-// Greedy algoritmus: mindig a legközelebbi következő pont
-function greedyRoute(origin, points){
-  const remain = points.slice();
-  const route = [];
-  let cur = { ...origin };
-  
-  while(remain.length){
-    let bestIdx = 0, bestD = Infinity;
-    for(let i=0; i<remain.length; i++){
-      const d = haversine(cur, remain[i]);
-      if(d < bestD){ 
-        bestD = d; 
-        bestIdx = i; 
-      }
-    }
-    
-    const nextPoint = remain[bestIdx];
-    nextPoint.dist = haversine(origin, nextPoint);
-    route.push(nextPoint);
-    cur = remain[bestIdx];
-    remain.splice(bestIdx, 1);
-  }
-  
-  return route;
-}
-
-// Távolság formázása
-function fmtMeters(m){
-  if(m < 1000) return Math.round(m) + " m";
-  return (m/1000).toFixed(1).replace(".", ",") + " km";
-}
-
-// Apple Maps több megállóval – Unified Map URL
-function appleMultiLink(origin, destinations){
-  if(!destinations || !destinations.length) return null;
-  const originStr = `${origin.lat},${origin.lon}`;
-  const destinationStr = `${destinations[destinations.length-1].lat},${destinations[destinations.length-1].lon}`;
-  const u = new URL("https://maps.apple.com/");
-  u.searchParams.set("dir", "driving");
-  u.searchParams.set("origin", originStr);
-  u.searchParams.set("destination", destinationStr);
-  if(destinations.length > 1){
-    const mids = destinations.slice(0, -1);
-    for(const p of mids){
-      u.searchParams.append("waypoint", `${p.lat},${p.lon}`);
-    }
-  }
-  return u.toString();
-}
-
-// Apple Maps link generálása (1 célpont)
-function appleLink(origin, destination){
-  if(!destination) return null;
-  const d = encodeURIComponent(`${destination.lat},${destination.lon}`);
-  const o = encodeURIComponent(`${origin.lat},${origin.lon}`);
-  return `https://maps.apple.com/?saddr=${o}&daddr=${d}`;
-}
-
-// Google Maps link generálása
-function googleLink(origin, destinations){
-  if(!destinations.length) return null;
-  
-  const o = `${origin.lat},${origin.lon}`;
-  const dest = `${destinations[destinations.length-1].lat},${destinations[destinations.length-1].lon}`;
-  
-  let url;
-  if(destinations.length === 1) {
-    // Egy célpont esetén
-    url = new URL("https://www.google.com/maps/dir/");
-    url.searchParams.set("api", "1");
-    url.searchParams.set("origin", o);
-    url.searchParams.set("destination", dest);
+// Egyszerű geokódoló (OpenStreetMap Nominatim)
+async function geocode(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if(data && data.length > 0) {
+    return {lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display_name: data[0].display_name};
   } else {
-    // Több célpont esetén
-    const waypoints = destinations.slice(0, destinations.length-1)
-      .map(p => `${p.lat},${p.lon}`).join("|");
-    
-    url = new URL("https://www.google.com/maps/dir/");
-    url.searchParams.set("api", "1");
-    url.searchParams.set("origin", o);
-    url.searchParams.set("destination", dest);
-    if(waypoints) url.searchParams.set("waypoints", waypoints);
-  }
-  
-  return url.toString();
-}
-
-// Waze link generálása
-function wazeLink(origin, destination){
-  if(!destination) return null;
-  const ll = `${destination.lat},${destination.lon}`;
-  return `https://waze.com/ul?ll=${encodeURIComponent(ll)}&navigate=yes`;
-}
-
-// Eredmények megjelenítése
-function renderList(container, origin, ordered){
-  container.innerHTML = "";
-  
-  if(!ordered.length) return;
-  
-  // Teljes útvonal gomb (ha több mint 1 cím van)
-  if(ordered.length >= 2){
-    const allCard = document.createElement("div");
-    allCard.className = "card";
-    
-    const left = document.createElement("div");
-    left.innerHTML = "<div class='addr'>🗺️ Teljes útvonal</div><div class='muted'>Összes megálló egyben</div>";
-    
-    const right = document.createElement("div");
-    right.className = "right";
-    
-    const gAll = document.createElement("a");
-    gAll.className = "btn";
-    gAll.textContent = "Google Maps";
-    gAll.href = googleLink(origin, ordered);
-    gAll.target = "_blank";
-
-    // ÚJ: Apple Maps több megállóval
-    const aAll = document.createElement("a");
-    aAll.className = "btn secondary";
-    aAll.textContent = "Apple Maps";
-    aAll.href = appleMultiLink(origin, ordered);
-    aAll.target = "_blank";
-    
-    right.appendChild(gAll);
-    right.appendChild(aAll);
-    allCard.appendChild(left);
-    allCard.appendChild(right);
-    container.appendChild(allCard);
-  }
-  
-  // Egyedi címek
-  ordered.forEach((p, idx) => {
-    const dist = p.dist || haversine(origin, p);
-    const card = document.createElement("div");
-    card.className = "card";
-    
-    const left = document.createElement("div");
-    const title = document.createElement("div");
-    title.className = "addr";
-    title.textContent = `${idx+1}. ${p.input}`;
-    
-    const sub = document.createElement("div");
-    sub.className = "muted";
-    sub.textContent = `${fmtMeters(dist)} • ${p.display.split(',').slice(0,2).join(',')}`;
-    
-    left.appendChild(title);
-    left.appendChild(sub);
-    
-    const right = document.createElement("div");
-    right.className = "right";
-    
-    const gBtn = document.createElement("a");
-    gBtn.className = "btn secondary";
-    gBtn.textContent = "Google";
-    gBtn.href = googleLink(origin, [p]);
-    gBtn.target = "_blank";
-    
-    const aBtn = document.createElement("a");
-    aBtn.className = "btn ghost";
-    aBtn.textContent = "Apple";
-    aBtn.href = appleLink(origin, p);
-    aBtn.target = "_blank";
-    
-    const wBtn = document.createElement("a");
-    wBtn.className = "btn ghost";
-    wBtn.textContent = "Waze";
-    wBtn.href = wazeLink(origin, p);
-    wBtn.target = "_blank";
-    
-    right.appendChild(gBtn);
-    right.appendChild(aBtn);
-    right.appendChild(wBtn);
-    
-    card.appendChild(left);
-    card.appendChild(right);
-    container.appendChild(card);
-  });
-}
-
-// Státusz beállítása
-function setStatus(message, type = 'info') {
-  const status = document.getElementById("status");
-  status.textContent = message;
-  status.className = `foot ${type}`;
-}
-
-// Főfunkció
-async function main(){
-  const results = document.getElementById("results");
-  
-  document.getElementById("go").addEventListener("click", async () => {
-    const goBtn = document.getElementById("go");
-    goBtn.disabled = true;
-    goBtn.textContent = "Feldolgozás...";
-    
-    try {
-      results.innerHTML = "";
-      setStatus("Helyzet lekérése…", 'loading');
-      
-      let origin;
-      try {
-        origin = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            position => resolve({ 
-              lat: position.coords.latitude, 
-              lon: position.coords.longitude 
-            }),
-            error => reject(error),
-            { 
-              enableHighAccuracy: true, 
-              timeout: 15000,
-              maximumAge: 60000 
-            }
-          );
-        });
-      } catch(e) {
-        setStatus("Nem sikerült lekérni a helyzetet. Engedélyezd a helymeghatározást a böngészőben.", 'error');
-        return;
-      }
-      
-      setStatus("Címek feldolgozása…", 'loading');
-      const lines = document.getElementById("addresses").value
-        .split("\n")
-        .map(s => s.trim())
-        .filter(Boolean);
-      
-      if(!lines.length) { 
-        setStatus("Adj meg legalább egy címet.", 'error'); 
-        return; 
-      }
-      
-      const geocoded = await geocodeAll(lines, setStatus);
-      
-      if(!geocoded.length) { 
-        setStatus("Egy címet sem sikerült beazonosítani.", 'error'); 
-        return; 
-      }
-      
-    const ordered = bruteForceTSP(geocoded, origin);
-
-      
-      setStatus(`Kész! ${ordered.length} cím rendezve a ${geocoded.length !== lines.length ? `${lines.length} közül` : 'listából'}.`, 'success');
-      renderList(results, origin, ordered);
-      
-      // Automatikus navigáció megnyitása
-      const app = document.getElementById("app").value;
-      let href = null;
-      
-      if(app === "google") {
-        href = googleLink(origin, ordered);
-      } else if(app === "apple") {
-        // Apple Maps több megállóval (Unified Map URL)
-        href = appleMultiLink(origin, ordered);
-      } else if(app === "waze") {
-        href = wazeLink(origin, ordered[0]);
-      }
-      
-      if(href) {
-        window.open(href, "_blank");
-      }
-      
-    } catch(error) {
-      console.error("Hiba:", error);
-      setStatus("Váratlan hiba történt. Próbáld újra.", 'error');
-    } finally {
-      goBtn.disabled = false;
-      goBtn.textContent = "Rendezés + Navigáció";
-    }
-  });
-  
-  // Példa címek betöltése
-  const exampleAddresses = `Kossuth Lajos utca 5, Szeged
-Dugonics tér 1, Szeged
-Rákóczi út 12, Szeged`;
-  
-  if(!document.getElementById("addresses").value.trim()) {
-    document.getElementById("addresses").value = exampleAddresses;
+    throw new Error(`Nem található hely: ${address}`);
   }
 }
 
-// Alkalmazás indítása
-window.addEventListener('load', main);
-
-// TSP brute force optimalizálás
-function permute(arr) {
-  const results = [];
-  function helper(path, remaining) {
-    if (remaining.length === 0) {
-      results.push(path);
-      return;
-    }
-    for (let i = 0; i < remaining.length; i++) {
-      helper(
-        path.concat(remaining[i]),
-        remaining.slice(0, i).concat(remaining.slice(i + 1))
-      );
+// Permutáció generátor
+function* permute(arr, n = arr.length) {
+  if(n <= 1) yield arr.slice();
+  else {
+    for(let i=0; i<n; i++) {
+      yield* permute(arr, n-1);
+      const j = n % 2 === 0 ? i : 0;
+      [arr[n-1], arr[j]] = [arr[j], arr[n-1]];
     }
   }
-  helper([], arr);
-  return results;
 }
 
-function totalDistance(route, points, origin) {
-  let dist = 0;
-  let cur = origin;
-  for (let i = 0; i < route.length; i++) {
-    dist += haversine(cur, points[route[i]]);
-    cur = points[route[i]];
-  }
-  return dist;
-}
+// Brute Force TSP algoritmus
+function bruteForceTSP(origin, points) {
+  if(points.length === 0) return [];
 
-function bruteForceTSP(points, origin) {
-  const indices = Array.from({ length: points.length }, (_, i) => i);
-  const perms = permute(indices);
-
+  const dist = (a,b) => haversine(a,b);
   let bestRoute = null;
   let bestDist = Infinity;
 
-  perms.forEach(route => {
-    const d = totalDistance(route, points, origin);
-    if (d < bestDist) {
-      bestDist = d;
-      bestRoute = route;
+  for(const perm of permute(points)) {
+    let totalDist = dist(origin, perm[0]);
+    for(let i=0; i<perm.length-1; i++) {
+      totalDist += dist(perm[i], perm[i+1]);
+      if(totalDist > bestDist) break; // korai kilépés
     }
-  });
-
-  return bestRoute.map(i => points[i]);
+    if(totalDist < bestDist) {
+      bestDist = totalDist;
+      bestRoute = perm.slice();
+    }
+  }
+  return bestRoute;
 }
 
-  
+// Google Maps URL generálása az adott sorrendhez
+function generateGoogleMapsURL(origin, points) {
+  if(points.length === 0) return "";
+
+  let url = "https://www.google.com/maps/dir/";
+  url += encodeURIComponent(origin) + "/";
+  points.forEach(p => {
+    url += encodeURIComponent(p.display_name) + "/";
+  });
+  return url;
+}
+
+// Apple Maps URL generálása az adott sorrendhez
+function generateAppleMapsURL(originCoords, points) {
+  if(points.length === 0) return "";
+
+  // Apple Maps nem támogat több pontos útvonalat URL-ben úgy mint Google Maps,
+  // ezért csak az első pontig mutatjuk az irányt, vagy egyszerűen megnyitjuk a címet.
+  // Az egyszerűség kedvéért megjelenítjük az első pont koordinátáit, de a végleges
+  // útvonaltervezéshez az Apple Maps appban kell kézzel kiválasztani a többi címet.
+
+  const base = "https://maps.apple.com/?saddr=";
+  const saddr = `${originCoords.lat},${originCoords.lon}`;
+  const daddr = `${points[0].lat},${points[0].lon}`;
+  return `${base}${saddr}&daddr=${daddr}`;
+}
+
+document.getElementById("go").addEventListener("click", async () => {
+  const originInput = document.getElementById("origin").value.trim();
+  const addressesInput = document.getElementById("addresses").value.trim();
+  const mapService = document.getElementById("mapService").value;
+  const resultDiv = document.getElementById("result");
+  resultDiv.textContent = "Feldolgozás... Kérlek várj.";
+
+  if(!originInput) {
+    alert("Kérlek add meg a kiindulási címet!");
+    return;
+  }
+  if(!addressesInput) {
+    alert("Kérlek adj meg legalább egy úticélt!");
+    return;
+  }
+
+  const addresses = addressesInput.split("\n").map(s => s.trim()).filter(s => s.length > 0);
+
+  try {
+    // Geokódoljuk a kiindulási pontot
+    const originGeo = await geocode(originInput);
+
+    // Geokódoljuk az összes címet
+    const geocodedPoints = [];
+    for(const addr of addresses) {
+      const g = await geocode(addr);
+      geocodedPoints.push(g);
+    }
+
+    // Brute Force TSP sorrend
+    const orderedPoints = bruteForceTSP(originGeo, geocodedPoints);
+
+    // Eredmény megjelenítése és link generálás
+    let output = `Optimális útvonal (Brute Force TSP szerint):\n\n`;
+    output += `Kiindulási pont: ${originGeo.display_name}\n\n`;
+    orderedPoints.forEach((p, i) => {
+      output += `${i+1}. ${p.display_name}\n`;
+    });
+
+    let mapUrl = "";
+    if(mapService === "google") {
+      mapUrl = generateGoogleMapsURL(originInput, orderedPoints);
+    } else if(mapService === "apple") {
+      mapUrl = generateAppleMapsURL(originGeo, orderedPoints);
+    }
+
+    output += `\n\n<a href="${mapUrl}" target="_blank">Útvonal megtekintése a kiválasztott térképen</a>`;
+
+    resultDiv.innerHTML = output;
+
+  } catch(err) {
+    resultDiv.textContent = "Hiba: " + err.message;
+  }
+});
 </script>
+
 </body>
 </html>
