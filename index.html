@@ -367,9 +367,16 @@ function renderList(container, origin, optimizedResult){
     
     const gAll = document.createElement("a");
     gAll.className = "btn";
-    gAll.textContent = "Google Maps";
+    gAll.textContent = "🗺️ Google Maps";
     gAll.href = googleLink(origin, route);
-    gAll.target = "_blank";
+    gAll.onclick = function(e) {
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if(isMobile) {
+        e.preventDefault();
+        window.location.href = this.href;
+        return false;
+      }
+    };
 
     const aAll = document.createElement("a");
     aAll.className = "btn secondary";
