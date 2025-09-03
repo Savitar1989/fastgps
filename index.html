@@ -282,7 +282,6 @@ function appleMultiLink(origin, destinations){
     url += `&daddr=${p.lat},${p.lon}`;
   });
   return url;
-  return u.toString();
 }
 
 // Apple Maps link generálása (1 célpont)
@@ -372,31 +371,35 @@ function renderList(container, origin, optimizedResult){
     };
 
     const aAll = document.createElement("a");
-aAll.className = "btn secondary";
-aAll.textContent = "Apple Maps";
+    aAll.className = "btn secondary";
+    aAll.textContent = "Apple Maps";
 
-// Use your dynamic appleMultiLink function, but make sure it returns a maps:// link for iOS
-const appleMapsURL = appleMultiLink(origin, route); // Should be like "maps://?daddr=destination"
-aAll.href = appleMapsURL;
+    // Apple Maps link javítása
+    const appleMapsURL = appleMultiLink(origin, route);
+    aAll.href = appleMapsURL;
 
-// Only add target/rel for desktop, not for iOS
-const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-if (!isMobile) {
-  aAll.target = "_blank";
-  aAll.rel = "noopener";
-}
+    if (!isMobile) {
+      aAll.target = "_blank";
+      aAll.rel = "noopener";
+    }
 
-// On iOS, override the link click to use window.location
-aAll.onclick = function(e) {
-  if (isMobile) {
-    e.preventDefault();
-    window.location.href = appleMapsURL;
-    return false;
+    aAll.onclick = function(e) {
+      if (isMobile) {
+        e.preventDefault();
+        window.location.href = appleMapsURL;
+        return false;
+      }
+    };
+
+    right.appendChild(gAll);
+    right.appendChild(aAll);
+    
+    allCard.appendChild(left);
+    allCard.appendChild(right);
+    container.appendChild(allCard);
   }
-};
-
-right.appendChild(aAll);
   
   // Egyedi címek optimalizált sorrendben
   route.forEach((p, idx) => {
@@ -524,20 +527,22 @@ async function main(){
       if(optimizedResult.route.length > 0) {
         if(app === "google") {
           href = googleLink(origin, optimizedResult.route);
+          if(href) {
+            window.open(href, "_blank");
+          }
         } else if(app === "apple") {
           href = appleMultiLink(origin, optimizedResult.route);
           const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
           if(isMobile && href) {
             window.location.href = href;
-        } else if(href) {
-          window.open(href, "_blank");
-        }
+          } else if(href) {
+            window.open(href, "_blank");
+          }
         } else if(app === "waze") {
           href = wazeLink(origin, optimizedResult.route[0]);
-        }
-          
-        if(href) {
-          window.open(href, "_blank");
+          if(href) {
+            window.open(href, "_blank");
+          }
         }
       }
       
@@ -566,7 +571,3 @@ window.addEventListener('load', main);
 </script>
 </body>
 </html>
-
-
-
-
