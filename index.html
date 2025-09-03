@@ -277,18 +277,11 @@ function fmtMeters(m){
 // Apple Maps több megállóval
 function appleMultiLink(origin, destinations){
   if(!destinations || !destinations.length) return null;
-  const originStr = `${origin.lat},${origin.lon}`;
-  const destinationStr = `${destinations[destinations.length-1].lat},${destinations[destinations.length-1].lon}`;
-  const u = new URL("https://maps.apple.com/");
-  u.searchParams.set("dir", "driving");
-  u.searchParams.set("origin", originStr);
-  u.searchParams.set("destination", destinationStr);
-  if(destinations.length > 1){
-    const mids = destinations.slice(0, -1);
-    for(const p of mids){
-      u.searchParams.append("waypoint", `${p.lat},${p.lon}`);
-    }
-  }
+  let url = `maps://?dirflg=d&saddr=${origin.lat},${origin.lon}`;
+  destinations.forEach(p => {
+    url += `&daddr=${p.lat},${p.lon}`;
+  });
+  return url;
   return u.toString();
 }
 
@@ -553,3 +546,4 @@ window.addEventListener('load', main);
 </script>
 </body>
 </html>
+
